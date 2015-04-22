@@ -1,0 +1,10 @@
+# ignore file backups
+*~
+*.bak.xml
+sysProps.xml
+
+# ignore build and generated files
+/bin/
+/build/
+/doc/
+/dist/

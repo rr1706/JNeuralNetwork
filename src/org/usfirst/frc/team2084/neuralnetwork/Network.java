@@ -6,20 +6,38 @@
  */
 package org.usfirst.frc.team2084.neuralnetwork;
 
+import java.util.Arrays;
+
 /**
+ * A feed-forward neural network that uses back-propagation learning.
+ * 
  * @author Ben Wolsieffer
  */
 public class Network {
 
-    private double error;
     private double recentAverageError;
+    private final int[] topology;
+    private final double eta;
+    private final double momentum;
+    private final TransferFunction transferFunction;
     private final Neuron[][] layers;
     private final double[] results;
 
     /**
+     * Creates a neural network with the specified topology, learning rate
+     * (eta), momentum (alpha) and transfer function.
      * 
+     * @param topology an array containing the size of each layer
+     * @param eta the learning rate
+     * @param momentum the learning momentum
+     * @param transferFunction the transfer function
      */
-    public Network(final int[] topology, final String transferFunction) {
+    public Network(final int[] topology, final double eta, final double momentum, final TransferFunction transferFunction) {
+        this.topology = topology;
+        this.eta = eta;
+        this.momentum = momentum;
+        this.transferFunction = transferFunction;
+
         // size
         final int numberOfLayers = topology.length;
         layers = new Neuron[numberOfLayers][];
@@ -27,31 +45,44 @@ public class Network {
         // create a new layer on each iteration
         for (int layerNumber = 0; layerNumber < numberOfLayers; layerNumber++) {
             final int layerSize = topology[layerNumber];
-            final Neuron[] layer = layers[layerNumber] = new Neuron[layerSize];
+            // Add 1 for bias
+            final Neuron[] layer = layers[layerNumber] = new Neuron[layerSize + 1];
 
             // number of outputs to a neuron
             final int numberOutputs = (layerNumber == numberOfLayers - 1) ? 0 : topology[layerNumber + 1];
 
             // fill layer with neurons and add bias neuron to the layer;
-            for (int neuronNumber = 0; neuronNumber <= topology[layerNumber]; neuronNumber++) {
+            for (int neuronNumber = 0; neuronNumber <= layerSize; neuronNumber++) {
                 layer[neuronNumber] = new Neuron(numberOutputs, neuronNumber, transferFunction);
             }
-        }
 
-        // Force the bias node's output to 1.0 (it was the last neuron pushed in
-        // this layer):
-        // TODO: should this be done for each layer?
-        Neuron[] outputLayer = layers[layers.length - 1];
-        outputLayer[outputLayer.length - 1].setOutputValue(1.0);
-        results = new double[outputLayer.length];
+            // Force the bias node's output to 1.0 (it was the last neuron
+            // pushed in this layer):
+            layer[layer.length - 1].setOutputValue(1.0);
+        }
+        // Create results array that is length of output layer - bias
+        results = new double[layers[layers.length - 1].length - 1];
     }
 
-    // feedForward - operation to train the network
-    public void feedForward(final double[] inputValues) {
+    /**
+     * Calculates the outputs of the network given the specified inputs.
+     * 
+     * To do this, each neuron multiplies its input value by a certain weight
+     * and feeds it to each neuron in the next layer. These neurons sum all
+     * their inputs (the values they received from the previous layer) and apply
+     * a logistic function (the transfer function) to the sum to calculate their
+     * output. The process repeats, with that layer sending its outputs to the
+     * next one, until the output (last) layer is reached. Each layer also has a
+     * bias neuron, which has a constant output of 1.0, which allows the network
+     * to shift its output.
+     * 
+     * @param inputValues input values to the network
+     */
+    public void feedForward(final double... inputValues) {
         final Neuron[] inputLayer = layers[0];
 
         if (inputValues.length != inputLayer.length - 1) {
-            throw new IllegalArgumentException("inputValues size needs to be the same as the input layer - bias");
+            throw new IllegalArgumentException("inputValues needs to be the same size as the input layer - bias");
         }
 
         for (int i = 0; i < inputValues.length; i++) {
@@ -63,87 +94,152 @@ public class Network {
         Neuron[] prevLayer = inputLayer;
         for (int layerNumber = 1; layerNumber < layers.length; layerNumber++) {
             Neuron[] layer = layers[layerNumber];
-            for (Neuron n : layer) {
-                n.feedForward(prevLayer);
+            for (int i = 0; i < layer.length - 1; i++) {
+                layer[i].feedForward(prevLayer);
             }
             prevLayer = layer;
         }
     }
 
-    // backPropagation learning
-    public void backPropagation(double[] targetValues, double eta, double alpha) {
+    /**
+     * backPropagation learning
+     * 
+     * @param targetValues the target values for the output
+     */
+    public void backPropagation(final double... targetValues) {
+
+        final Neuron[] outputLayer = layers[layers.length - 1];
+
         // Calculate overall net error (RMS-root mean square error - of output
         // neuron errors)
-        Neuron[] outputLayer = layers[layers.length - 1];
-
         // overall net error
-        error = 0.0;
+        double error = 0.0;
 
         for (int n = 0; n < outputLayer.length - 1; n++) {
-            final double delta = targetValues[n] - outputLayer[n].getOutputValue();
+            Neuron output = outputLayer[n];
+            final double delta = targetValues[n] - output.getOutputValue();
             error += delta * delta;
+
+            // Calculate output layer gradients
+            outputLayer[n].calculateOutputGradients(targetValues[n]);
         }
         error *= 0.5;
+        // error = Math.sqrt(error / outputLayer.length);
 
         // error/=(* numPatterns); //get average error squared
         // error/=outputLayer.length - 1; //get average error squared
         // Implement a recent average measurement
         recentAverageError = error;
 
-        // Calculate output layer gradients
-        for (int n = 0; n < outputLayer.length - 1; n++) {
-            outputLayer[n].calculateOutputGradients(targetValues[n]);
-        }
-
         // Calculate hidden layer gradients
         for (int layerNumber = layers.length - 2; layerNumber > 0; layerNumber--) {
             final Neuron[] hiddenLayer = layers[layerNumber];
             final Neuron[] nextLayer = layers[layerNumber + 1];
 
-            for (Neuron n : hiddenLayer) {
-                n.calculateHiddenGradients(nextLayer);
-            }
+            Arrays.stream(hiddenLayer).forEach(n -> n.calculateHiddenGradients(nextLayer));
         }
 
         // For all layers from outputs to first hidden layer,
         // update connection weights
         for (int layerNumber = layers.length - 1; layerNumber > 0; layerNumber--) {
-            Neuron[] layer = layers[layerNumber];
-            Neuron[] prevLayer = layers[layerNumber - 1];
+            final Neuron[] layer = layers[layerNumber];
+            final Neuron[] prevLayer = layers[layerNumber - 1];
 
             for (int n = 0; n < layer.length - 1; n++) {
-                layer[n].updateInputWeights(prevLayer, eta, alpha);
+                layer[n].updateInputWeights(prevLayer, eta, momentum);
             }
         }
     }
 
+    /**
+     * Gets the results of the network.
+     * 
+     * @return an array containing the values of each of the output neurons
+     */
     public double[] getResults() {
-        Neuron[] outputLayer = layers[layers.length - 1];
+        final Neuron[] outputLayer = layers[layers.length - 1];
         for (int n = 0; n < outputLayer.length - 1; n++) {
             results[n] = outputLayer[n].getOutputValue();
         }
         return results;
     }
 
+    /**
+     * Gets the learning rate of the network.
+     * 
+     * @return the learning rate
+     */
+    public double getEta() {
+        return eta;
+    }
+
+    /**
+     * Gets the momentum of the network.
+     * 
+     * @return the momentum
+     */
+    public double getMomentum() {
+        return momentum;
+    }
+
+    /**
+     * Gets the transfer function for the network.
+     * 
+     * @return the transfer function
+     */
+    public TransferFunction getTransferFunction() {
+        return transferFunction;
+    }
+
+    /**
+     * Gets the topology of the network in the form of an int[], with each
+     * element containing the size of a layer.
+     * 
+     * @return the topology of the network
+     */
+    public int[] getTopology() {
+        return topology;
+    }
+
     public double getRecentAverageError() {
         return recentAverageError;
     }
 
-    public double[] getLayerValues(int row) {
-        final Neuron[] layer = layers[row];
-        final double[] values = new double[layer.length];
+    public double[] getLayerOutputs(final int num) {
+        final Neuron[] layer = layers[num];
+        final double[] values = new double[layer.length - 1];
 
-        for (int i = 0; i < layer.length; i++) {
+        for (int i = 0; i < layer.length - 1; i++) {
             values[i] = layer[i].getOutputValue();
         }
         return values;
     }
 
-    public void setLayer(double[] values, int row) {
-        final Neuron[] layer = layers[row];
+    public void setLayerOutputs(final int num, final double[] outputs) {
+        final Neuron[] layer = layers[num];
+
+        if (outputs.length != layer.length - 1) {
+            throw new IllegalArgumentException("Incorrect number of outputs.");
+        }
 
         for (int i = 0; i < layer.length; i++) {
-            layer[i].setOutputValue(values[i]);
+            layer[i].setOutputValue(outputs[i]);
         }
+    }
+
+    public int getTotalLayers() {
+        return layers.length;
+    }
+
+    public Neuron[] getLayer(final int num) {
+        return layers[num];
+    }
+
+    public Neuron[] getInputLayer() {
+        return layers[0];
+    }
+
+    public Neuron[] getOutputLayer() {
+        return layers[layers.length - 1];
     }
 }

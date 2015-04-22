@@ -7,6 +7,9 @@
 package org.usfirst.frc.team2084.neuralnetwork;
 
 /**
+ * Represents a connection between two {@link Neuron}s, and holds a weight and
+ * its delta.
+ * 
  * @author Ben Wolsieffer
  */
 public class Connection {
