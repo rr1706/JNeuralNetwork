@@ -202,7 +202,7 @@ public class Data {
                                 transferFunction = new TransferFunction.Sigmoid();
                             break;
                             case "tanh":
-                                transferFunction = new TransferFunction.TanH();
+                                transferFunction = new TransferFunction.HyperbolicTangent();
                             break;
                             case "step":
                                 transferFunction = new TransferFunction.Step();
@@ -437,7 +437,8 @@ public class Data {
      * 
      * @see #save(OutputStream)
      */
-    public void save(final File file) throws FileNotFoundException, IOException {
+    public void save(final File file) throws IOException {
+        file.createNewFile();
         save(new FileOutputStream(file));
     }
 

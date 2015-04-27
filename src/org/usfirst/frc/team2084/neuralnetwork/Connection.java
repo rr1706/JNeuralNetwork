@@ -14,6 +14,13 @@ package org.usfirst.frc.team2084.neuralnetwork;
  */
 public class Connection {
 
+    /**
+     * The weight of this connection.
+     */
     public double weight = Math.random();
+    /**
+     * The change in the weight from the last time it was updated. This is used
+     * for momentum calculation.
+     */
     public double deltaWeight = 0;
 }

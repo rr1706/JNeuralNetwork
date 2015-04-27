@@ -102,9 +102,11 @@ public class Network {
     }
 
     /**
-     * backPropagation learning
+     * Performs back propagation learning on the network. This attempts to
+     * adjust the weights of the neurons to minimize the error between the
+     * target outputs and the specified outputs.
      * 
-     * @param targetValues the target values for the output
+     * @param targetValues the target values for the outputs
      */
     public void backPropagation(final double... targetValues) {
 
@@ -201,10 +203,29 @@ public class Network {
         return topology;
     }
 
+    /**
+     * Get the most recent average error calculated during backprogagation.
+     * 
+     * @return the average error
+     */
     public double getRecentAverageError() {
         return recentAverageError;
     }
 
+    /**
+     * Gets the outputs of specified layer in the form of an array of doubles.
+     * This is fairly inefficient because it creates a new {@code double[]} each
+     * time it is called. It is recommended to get the neuron object itself
+     * (through {@link #getLayer(int)} and call {@link Neuron#getOutputValue()}
+     * on it.
+     * 
+     * The returned array does not include the output of the bias node, which is
+     * generally useless. If it is absolutely necessary to know the output of
+     * the bias neuron, one can get the neuron object (as described above).
+     * 
+     * @param num the layer index
+     * @return the array of layer outputs
+     */
     public double[] getLayerOutputs(final int num) {
         final Neuron[] layer = layers[num];
         final double[] values = new double[layer.length - 1];
@@ -215,30 +236,62 @@ public class Network {
         return values;
     }
 
-    public void setLayerOutputs(final int num, final double[] outputs) {
+    public void setLayerOutputs(final int num, final double... outputs) {
         final Neuron[] layer = layers[num];
 
         if (outputs.length != layer.length - 1) {
             throw new IllegalArgumentException("Incorrect number of outputs.");
         }
 
-        for (int i = 0; i < layer.length; i++) {
+        for (int i = 0; i < outputs.length; i++) {
             layer[i].setOutputValue(outputs[i]);
         }
     }
 
+    /**
+     * Gets the number of layers in the network.
+     * 
+     * @return the number of layers in the network
+     */
     public int getTotalLayers() {
         return layers.length;
     }
 
+    /**
+     * Gets the array that represents the specified layer of neurons. This
+     * includes the bias neuron, which is not included in the return value of {
+     * {@link #getLayerOutputs(int)}. Also, the output layer includes a bias
+     * neuron, even though it is entirely useless. The returned array is not
+     * safe to modify (as it is the same one used internally), but you are free
+     * to shoot your self in the foot if you feel like it.
+     * 
+     * @param num the layer index
+     * @return the layer of neurons
+     */
     public Neuron[] getLayer(final int num) {
         return layers[num];
     }
 
+    /**
+     * Gets the input layer of neurons. This is the first layer. Has the same
+     * restrictions and caveats as {@link #getLayer(int)}.
+     * 
+     * @return the input layer
+     * 
+     * @see #getLayer(int)
+     */
     public Neuron[] getInputLayer() {
         return layers[0];
     }
 
+    /**
+     * Gets the output layer of neurons. This is the last layer. Has the same
+     * restrictions and caveats as {@link #getLayer(int)}.
+     * 
+     * @return the output layer
+     * 
+     * @see #getLayer(int)
+     */
     public Neuron[] getOutputLayer() {
         return layers[layers.length - 1];
     }

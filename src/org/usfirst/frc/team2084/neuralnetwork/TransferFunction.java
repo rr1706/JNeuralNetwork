@@ -52,7 +52,7 @@ public interface TransferFunction {
         }
     }
 
-    public static class TanH implements TransferFunction {
+    public static class HyperbolicTangent implements TransferFunction {
 
         @Override
         public double calculate(double x) {

@@ -7,18 +7,44 @@
 package org.usfirst.frc.team2084.neuralnetwork;
 
 /**
+ * Represents a neuron in a neural network.
+ * 
  * @author Ben Wolsieffer
  */
 public class Neuron {
 
+    /**
+     * Most recent sum of the inputs multiplied by their connection weights.
+     */
     private double sum;
-    private double outputValue;
+    /**
+     * Most recent output value, which is the transfer function evaluated at the
+     * sum.
+     */
+    double outputValue;
+    /**
+     * Gradient of the neuron. Used in back-propagation.
+     */
     private double gradient;
+    /**
+     * Transfer function that is used to convert inputs into the output value.
+     */
     private final TransferFunction transferFunction;
+    /**
+     * The index in the layer of this neuron.
+     */
     private final int index;
 
     private final Connection[] outputConnections;
 
+    /**
+     * Create a {@link Neuron} with the specified number of outputs, index and
+     * transfer function. This is usually only called by {@link Network}.
+     * 
+     * @param numberOutputs the number of outputs to the next layer
+     * @param index the index of the neuron within the layer
+     * @param transferFunction the neuron's transfer function
+     */
     public Neuron(final int numberOutputs, final int index, final TransferFunction transferFunction) {
         outputConnections = new Connection[numberOutputs];
         for (int i = 0; i < outputConnections.length; i++) {
@@ -28,6 +54,11 @@ public class Neuron {
         this.transferFunction = transferFunction;
     }
 
+    /**
+     * Sets the output value of the neuron.
+     * 
+     * @param value the output value
+     */
     public void setOutputValue(final double value) {
         outputValue = value;
     }
@@ -49,7 +80,7 @@ public class Neuron {
             sum += n.getOutputValue() * n.outputConnections[index].weight;
         }
 
-        // activate function or transfer /sig /gaussian /linear/ step
+        // activate function or transfer sig/gaussian/linear/step
         outputValue = transferFunction.calculate(sum);
         this.sum = sum;
     }
