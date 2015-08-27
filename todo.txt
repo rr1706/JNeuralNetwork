@@ -1,0 +1,17 @@
+Save network architecture and weights to file, perhaps txt
+Load a network from same type of file
+Train turret (one motor) to line up with vision data in t seconds (ex .25)
+  Randomly assign h and t
+  Pass them into network as inputs
+  Train based off difference in heading
+  Repeat until perfect
+Train robot (2 motors) to line up with vision data in t seconds (ex .25)
+  Randomly assign h and t
+  Pass them into network as inputs
+  Train based off difference in heading (and penalize for moving the robot a lot)
+  Repeat until perfect
+Train swerve (8 motors) to go to (x, y, h) in t seconds
+  Randomly assign an x, y, h, and t
+  Pass them in as inputs to the NN
+  Train based off difference in positiion and heading
+  Repeat until perfect
