@@ -1,3 +1,4 @@
+Set it up fo package.1706.whatever
 Save network architecture and weights to file, perhaps txt
 Load a network from same type of file
 Train turret (one motor) to line up with vision data in t seconds (ex .25)
