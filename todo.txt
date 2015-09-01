@@ -1,4 +1,4 @@
-1. Set it up fo package.1706.whatever
+1. Set it up for package.1706.whatever
 2. Save network architecture and weights to file, perhaps txt
 3. Load a network from same type of file
 4. Use PID to line up turret with vision data (one motor)
